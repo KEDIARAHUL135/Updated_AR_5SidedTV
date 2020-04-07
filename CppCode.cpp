@@ -1,3 +1,10 @@
+
+//###########################################################################################
+// File Nme		: CppCode.py
+// Created By	: Rahul Kedia
+// Project		: AR_5SidedTV
+// Description	: This file contains the C++ code for the project.
+//###########################################################################################
 #include <opencv2/aruco.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
@@ -9,12 +16,15 @@
 #include <stdio.h>
 #include <vector>
 
-
+// Setting size in which all the frames will be resized to get the same size of all frames.
 int FrameSize[] = {1024, 576};
+// Declaring camera intrinsic parameters variables globally.
 double ret;
 cv::Mat mtx, dist, rvecs, tvecs;	
 
 
+// This function reads the camera intrinsic parameters from the file "calibration.yaml"
+// and stores them in globally declared variables.
 int ReadCalibrationParams()
 {
 	cv::FileStorage calibration_file("calibration.yaml", cv::FileStorage::READ);
@@ -28,14 +38,18 @@ int ReadCalibrationParams()
 }
 
 
+// This function detects the aruco markers in the frame, estimates its pose and find the vertices of the 3D cube.
 bool DetectAruco_FindVertices(cv::Mat ArucoVideoFrame, std::vector<int> &IDs, std::vector<cv::Point2f> &BottomVertices, std::vector<cv::Point2f> &TopVertices)
-{
+{	
+	// BottomVertices and TopVertices variables store the bottom and top 4 vertices of the cube respectively.
+	
 	std::vector<cv::Point3f> axesPoint;
 	axesPoint.push_back(cv::Point3f(0, 0, 0)); 
 	axesPoint.push_back(cv::Point3f(0.1, 0, 0));
 	axesPoint.push_back(cv::Point3f(0, 0.1, 0));
 	axesPoint.push_back(cv::Point3f(0, 0, 0.1));
 
+	// Detecting Markers
 	cv::Mat GrayImage = ArucoVideoFrame.clone();
 	cv::cvtColor(ArucoVideoFrame, GrayImage, cv::COLOR_BGR2GRAY);
 	
@@ -52,14 +66,17 @@ bool DetectAruco_FindVertices(cv::Mat ArucoVideoFrame, std::vector<int> &IDs, st
 	std::vector<cv::Vec3d> rvec, tvec;
 	cv::aruco::estimatePoseSingleMarkers(Corners, 0.05, mtx, dist, rvec, tvec);
 
-	// Checking if rvec and tvec are found
+	// Checking if rvec and tvec are found (Pose is estimated)
 	if(rvec.size() == 0 || tvec.size() == 0)
 		return false;
 	
+	// Creating a copy to draw axis.
 	cv::Mat ArucoVideoFrameCopy = ArucoVideoFrame.clone();
 
+	// Finding cube vertices wrt each aruco marker.
 	for (int i = 0 ; i < IDs.size() ; i++)
 	{
+		// The end points of each axis will be stored in "imagePoints"
 		std::vector<cv::Point2f> imagePoints;
 		cv::projectPoints(axesPoint, rvec[i], tvec[i], mtx, dist, imagePoints);
 		cv::aruco::drawAxis(ArucoVideoFrameCopy, mtx, dist, rvec[i], tvec[i], 0.1);
@@ -68,15 +85,17 @@ bool DetectAruco_FindVertices(cv::Mat ArucoVideoFrame, std::vector<int> &IDs, st
 		BottomVertices.push_back(imagePoints[0]);
 		TopVertices.push_back(imagePoints[3]);
 	}
-	//cv::imshow("ArucoAxisDisplay", ArucoVideoFrameCopy);
+	//cv::imshow("ArucoAxisDisplay", ArucoVideoFrameCopy);		// Uncomment to display axes.
 	return true;
 }
 
 
+// This function sets the vertices of cube in order in a single variable "CubeVertices" for reasons discussed in README.
 bool SetCubeVertices(std::vector<cv::Point2f> BottomVertices, std::vector<cv::Point2f> TopVertices, std::vector<int> &IDs, std::vector<std::vector<int>> &CubeVertices)
 {	
 	int ArrangedBottomVertices[4][2], ArrangedTopVertices[4][2];
 	
+	// Arranging bottom and top vertices in order
 	for (int i = 0 ; i < 4 ; i++)
 	{
 		ArrangedBottomVertices[IDs[i]][0] = int(round(BottomVertices[i].x));
@@ -84,6 +103,8 @@ bool SetCubeVertices(std::vector<cv::Point2f> BottomVertices, std::vector<cv::Po
 		ArrangedTopVertices[IDs[i]][0] = int(round(TopVertices[i].x));
 		ArrangedTopVertices[IDs[i]][1] = int(round(TopVertices[i].y));
 	}
+	
+	// Checking threshold values and appending CubeVertices
 	for (int i = 0 ; i < 4 ; i++)
 	{
 		if ((0 <= ArrangedBottomVertices[i][0]) &&
@@ -110,6 +131,8 @@ bool SetCubeVertices(std::vector<cv::Point2f> BottomVertices, std::vector<cv::Po
 }
 
 
+// This function does a projective transform of a frame wrt the points given in "ArucoPoint". 
+// Remaining part of the frame is left black.
 cv::Mat ProjectiveTransform(cv::Mat FrameToBeOverlaped, std::vector<cv::Point2f> ArucoPoint)
 {
 	int Height = FrameToBeOverlaped.rows, Width = FrameToBeOverlaped.cols;
@@ -135,6 +158,10 @@ cv::Mat ProjectiveTransform(cv::Mat FrameToBeOverlaped, std::vector<cv::Point2f>
 	return TransformedFrame;
 }
 
+
+// This function overlapps the two frames as required.
+// ("FrameToBeOverlaped" on "ArucoVideoFrame" at coordinates given in "ArucoPoints")
+// Working of this is explained properly in README.
 cv::Mat OverlapImage(cv::Mat ArucoVideoFrame, cv::Mat FrameToBeOverlaped, std::vector<cv::Point2f> ArucoPoint)
 {
 	int Height = FrameToBeOverlaped.rows, Width = FrameToBeOverlaped.cols;
@@ -158,8 +185,13 @@ cv::Mat OverlapImage(cv::Mat ArucoVideoFrame, cv::Mat FrameToBeOverlaped, std::v
 }
 
 
+// This function calls the function OverlapImage to overlap the video frames on the sides of virtual cube formed.
+// It first sets the vertices for all sides in variable "Vertices" and alsoo determines the order in which frames
+// will be overlapped.
 bool CallForOverlapping(cv::Mat ArucoVideoFrame, cv::Mat VideoFramesTO[5], std::vector<std::vector<int>> CubeVertices, cv::Mat &FinalFrame)
 {
+	// This will store the y coordinate of center of the bottom edges of the 4 standing sides of the cube.
+	// This is done to determine the order in which sides should be called for overlapp.
 	int EdgeCentersYCoordinate[4] = {(CubeVertices[0][1] + CubeVertices[1][1])/2,
 							         (CubeVertices[1][1] + CubeVertices[2][1])/2,
 							  		 (CubeVertices[2][1] + CubeVertices[3][1])/2,
@@ -171,6 +203,7 @@ bool CallForOverlapping(cv::Mat ArucoVideoFrame, cv::Mat VideoFramesTO[5], std::
 	
 	std::sort(SortedEdgeCenters, SortedEdgeCenters+4);
 
+	// Determining the order.
 	std::vector<int> Order;
 	for (int i = 0 ; i < 4 ; i++){
 		for (int j = 0 ; j < 4 ; j++){
@@ -188,34 +221,34 @@ bool CallForOverlapping(cv::Mat ArucoVideoFrame, cv::Mat VideoFramesTO[5], std::
 	}}}
 	Order.push_back(4);
 	
-
+	// Setting corner vertices of all the faces.
 	std::vector<std::vector<cv::Point2f>> Vertices;
 	std::vector<cv::Point2f> Temp1, Temp2, Temp3, Temp4, Temp5;
 	Temp1.push_back(cv::Point2f(CubeVertices[5][0], CubeVertices[5][1]));
 	Temp1.push_back(cv::Point2f(CubeVertices[4][0], CubeVertices[4][1]));
 	Temp1.push_back(cv::Point2f(CubeVertices[0][0], CubeVertices[0][1]));
 	Temp1.push_back(cv::Point2f(CubeVertices[1][0], CubeVertices[1][1]));
-	Vertices.push_back(Temp1);
+	Vertices.push_back(Temp1);												// Standing face with markers ids 0&1
 	Temp2.push_back(cv::Point2f(CubeVertices[6][0], CubeVertices[6][1]));
 	Temp2.push_back(cv::Point2f(CubeVertices[5][0], CubeVertices[5][1]));
 	Temp2.push_back(cv::Point2f(CubeVertices[1][0], CubeVertices[1][1]));
 	Temp2.push_back(cv::Point2f(CubeVertices[2][0], CubeVertices[2][1]));
-	Vertices.push_back(Temp2);
+	Vertices.push_back(Temp2);												// Standing face with markers ids 1&2
 	Temp3.push_back(cv::Point2f(CubeVertices[7][0], CubeVertices[7][1]));
 	Temp3.push_back(cv::Point2f(CubeVertices[6][0], CubeVertices[6][1]));
 	Temp3.push_back(cv::Point2f(CubeVertices[2][0], CubeVertices[2][1]));
 	Temp3.push_back(cv::Point2f(CubeVertices[3][0], CubeVertices[3][1]));
-	Vertices.push_back(Temp3);
+	Vertices.push_back(Temp3);												// Standing face with markers ids 2&3
 	Temp4.push_back(cv::Point2f(CubeVertices[4][0], CubeVertices[4][1]));
 	Temp4.push_back(cv::Point2f(CubeVertices[7][0], CubeVertices[7][1]));
 	Temp4.push_back(cv::Point2f(CubeVertices[3][0], CubeVertices[3][1]));
 	Temp4.push_back(cv::Point2f(CubeVertices[0][0], CubeVertices[0][1]));
-	Vertices.push_back(Temp4);
+	Vertices.push_back(Temp4);												// Standing face with markers ids 3&0
 	Temp5.push_back(cv::Point2f(CubeVertices[4][0], CubeVertices[4][1]));
 	Temp5.push_back(cv::Point2f(CubeVertices[5][0], CubeVertices[5][1]));
 	Temp5.push_back(cv::Point2f(CubeVertices[6][0], CubeVertices[6][1]));
 	Temp5.push_back(cv::Point2f(CubeVertices[7][0], CubeVertices[7][1]));
-	Vertices.push_back(Temp5);
+	Vertices.push_back(Temp5);												// Top face.
 
 	FinalFrame = ArucoVideoFrame.clone();
 
@@ -226,9 +259,13 @@ bool CallForOverlapping(cv::Mat ArucoVideoFrame, cv::Mat VideoFramesTO[5], std::
 }
 
 
+// Main function. It reads the videos and calls all functions one by one in order to get the 3D box and displays it.
 int main()
 {
+	// Calling function to read camera params from file
 	ReadCalibrationParams();
+	
+	// Reading Videos
 	cv::VideoCapture ArucoCap, Video1Cap, Video2Cap, Video3Cap, Video4Cap, Video5Cap;
 	ArucoCap.open("Videos/ArucoVideo1.avi");
 	Video1Cap.open("Videos/Video1.avi");
@@ -242,6 +279,7 @@ int main()
 
 	while (true)
 	{
+		// Checking if all videos are opened.
 		bool Break = false;
 		for(int i = 0 ; i < SizeOfCapList ; i++)
 			if(!CapList[i]->isOpened()) Break = true;
@@ -251,6 +289,7 @@ int main()
 			break;
 		}
 
+		// Reading all frames.
 		cv::Mat FrameList[6], OverlapVideoFrameList[5];
 		for(int i = 0 ; i < SizeOfCapList ; i++)
 		{
@@ -258,36 +297,44 @@ int main()
 			CapList[i]->read(Frame);
 			if(Frame.empty())
 			{
+				// If video ends, restart it.
 				CapList[i]->set(cv::CAP_PROP_POS_FRAMES, 0);
 				CapList[i]->read(Frame);
 			}
 			FrameList[i] = Frame;
 		}
 
+		// Resizing all frames to same size.
 		for (int i = 0 ; i < (sizeof(FrameList)/sizeof(FrameList[0])) ; i++)
 			cv::resize(FrameList[i], FrameList[i], cv::Size(FrameSize[0], FrameSize[1]));
 
+		// Separating Aruco video frame and frames which are to be overlaped.
 		cv::Mat ArucoVideoFrame = FrameList[0];
 		std::copy(FrameList + 1, FrameList + 6, OverlapVideoFrameList + 0);
 
+		// Detecting Arucos and finding vertices.
 		std::vector<int> IDs;
 		std::vector<cv::Point2f> BottomVertices, TopVertices;
 		bool Ret1 = DetectAruco_FindVertices(ArucoVideoFrame, IDs, BottomVertices, TopVertices);		
-		if(!Ret1) continue;
+		if(!Ret1) continue;					// Checking if all goes well
 
+		// Setting cube vertices
 		std::vector<std::vector<int>> CubeVertices;
 		bool Ret2 = SetCubeVertices(BottomVertices, TopVertices, IDs, CubeVertices);
-		if(!Ret2) continue;
+		if(!Ret2) continue;					// Checking if all goes well
 
+		// Overlapping frames.
 		cv::Mat FinalFrame;
 		bool Ret3 = CallForOverlapping(ArucoVideoFrame, OverlapVideoFrameList, CubeVertices, FinalFrame);
-		if (!Ret3) continue;
+		if (!Ret3) continue;					// Checking if all goes well
 		
+		// Displaying output.
 		cv::imshow("FinalFrame", FinalFrame);
-		if ((cv::waitKey(1) & 0xFF) == 'q')
+		if ((cv::waitKey(1) & 0xFF) == 'q')		// Break if 'q' is pressed.
 			break;
 	}
 	
+	// Releasing VideoCapture objects.
 	for (int i = 0 ; i < SizeOfCapList ; i++)
 		CapList[i]->release();
 
