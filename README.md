@@ -28,7 +28,7 @@ With this observation, we now aim to set the coordinates of the vertices of the 
 The order used is that the variable “CubeVertices” will be of size 8*2 having bottom vertices of the cube in its first 4 rows and corresponding top vertices in its next 4 rows. Also, the first element will correspond to marker with ID 0, next for the marker with ID 1 and so on.
 This is explained with the help of an image below.
 
-
+![](Images/CubeVertices.jpg)
 
 The final step for this project is to overlap frames to form a 3D box. 
 
@@ -40,7 +40,7 @@ This order is made so that it is made sure that the back face doesn’t overlap 
 
 The working of function OverlapImage() is explained in the image below.
 
-
+![](Images/OverlapImage.jpg)
 
 
 ### References
