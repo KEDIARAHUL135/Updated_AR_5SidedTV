@@ -144,7 +144,7 @@ def CallForOverlapping(ArucoVideoFrame, VideoFramesTO, CubeVertices):
 
 
 def main():
-	# Dictonary - DICT_6X6_50 is used.
+	# Dictionary - DICT_6X6_50 is used.
 	# Reading video
 	CapList = [cv2.VideoCapture(0),#'Videos/ArucoVideo1.avi'),
 			   cv2.VideoCapture('Videos/Video1.avi'),
