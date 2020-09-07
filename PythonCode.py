@@ -115,7 +115,7 @@ def ProjectiveTransform(FrameToBeOverlaped, ArucoPoint):
 	return TransformedFrame
 
 
-# This function overlapps the two frames as required.
+# This function overlaps the two frames as required.
 # ("FrameToBeOverlaped" on "ArucoVideoFrame" at coordinates given in "ArucoPoints")
 # Working of this is explained properly in README.
 def OverlapImage(ArucoVideoFrame, FrameToBeOverlaped, ArucoPoint):
@@ -139,7 +139,7 @@ def OverlapImage(ArucoVideoFrame, FrameToBeOverlaped, ArucoPoint):
 def CallForOverlapping(ArucoVideoFrame, VideoFramesTO, CubeVertices):
 	Vertices = np.zeros([4, 2])
 	# This will store the y coordinate of center of the bottom edges of the 4 standing sides of the cube.
-	# This is done to determine the order in which sides should be called for overlapp.
+	# This is done to determine the order in which sides should be called for overlap.
 	EdgeCentersYCoordinate = [(CubeVertices[0][1] + CubeVertices[1][1])//2,
 							  (CubeVertices[1][1] + CubeVertices[2][1])//2,
 							  (CubeVertices[2][1] + CubeVertices[3][1])//2,
@@ -176,7 +176,7 @@ def CallForOverlapping(ArucoVideoFrame, VideoFramesTO, CubeVertices):
 
 # Main function. It reads the videos and calls all functions one by one in order to get the 3D box and displays it.
 def main():
-	# Dictonary - DICT_6X6_50 is used.
+	# Dictionary - DICT_6X6_50 is used.
 	# Reading videos
 	CapList = [cv2.VideoCapture('Videos/ArucoVideo1.avi'),
 			   cv2.VideoCapture('Videos/Video1.avi'),
@@ -209,7 +209,7 @@ def main():
 		for i in range(len(FrameList)):
 			FrameList[i] = cv2.resize(FrameList[i], FrameSize)
 
-		# Separating Aruco video frame and frames which are to be overlaped.
+		# Separating Aruco video frame and frames which are to be overlapped.
 		ArucoVideoFrame = FrameList[0]
 		OverlapVideoFrameList = FrameList[1:]
 

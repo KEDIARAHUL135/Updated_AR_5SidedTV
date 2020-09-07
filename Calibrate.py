@@ -83,7 +83,7 @@ def read_chessboards():
 
 def calibrate_camera(allCorners,allIds,imsize):   
     """
-    Calibrates the camera using the dected corners.
+    Calibrates the camera using the detected corners.
     """
     #print("CAMERA CALIBRATION")
     

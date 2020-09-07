@@ -159,7 +159,7 @@ cv::Mat ProjectiveTransform(cv::Mat FrameToBeOverlaped, std::vector<cv::Point2f>
 }
 
 
-// This function overlapps the two frames as required.
+// This function overlaps the two frames as required.
 // ("FrameToBeOverlaped" on "ArucoVideoFrame" at coordinates given in "ArucoPoints")
 // Working of this is explained properly in README.
 cv::Mat OverlapImage(cv::Mat ArucoVideoFrame, cv::Mat FrameToBeOverlaped, std::vector<cv::Point2f> ArucoPoint)
@@ -191,7 +191,7 @@ cv::Mat OverlapImage(cv::Mat ArucoVideoFrame, cv::Mat FrameToBeOverlaped, std::v
 bool CallForOverlapping(cv::Mat ArucoVideoFrame, cv::Mat VideoFramesTO[5], std::vector<std::vector<int>> CubeVertices, cv::Mat &FinalFrame)
 {
 	// This will store the y coordinate of center of the bottom edges of the 4 standing sides of the cube.
-	// This is done to determine the order in which sides should be called for overlapp.
+	// This is done to determine the order in which sides should be called for overlap.
 	int EdgeCentersYCoordinate[4] = {(CubeVertices[0][1] + CubeVertices[1][1])/2,
 							         (CubeVertices[1][1] + CubeVertices[2][1])/2,
 							  		 (CubeVertices[2][1] + CubeVertices[3][1])/2,
@@ -308,7 +308,7 @@ int main()
 		for (int i = 0 ; i < (sizeof(FrameList)/sizeof(FrameList[0])) ; i++)
 			cv::resize(FrameList[i], FrameList[i], cv::Size(FrameSize[0], FrameSize[1]));
 
-		// Separating Aruco video frame and frames which are to be overlaped.
+		// Separating Aruco video frame and frames which are to be overlapped.
 		cv::Mat ArucoVideoFrame = FrameList[0];
 		std::copy(FrameList + 1, FrameList + 6, OverlapVideoFrameList + 0);
 
